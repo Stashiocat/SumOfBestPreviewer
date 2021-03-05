@@ -1,6 +1,9 @@
 from lxml import etree
-import sys
+from sys import argv
 import PySimpleGUI as sg
+import easygui
+
+sg.theme('DarkBlue')
 
 def TimeFormatter(time, pos):
     h = int(time / 3600)
@@ -67,36 +70,63 @@ def CalculateSumOfBest(splits):
     sum = 0
     
     p = -1
+    outSegmentTimes = []
     for s in range(len(splits)):
         n = names.index(splits[s])
         b = GetBestSegment(v, names, p, n)
         sum += b
+        outSegmentTimes.append(TimeFormatter(b, 0))
         p = n
         
-    return TimeFormatter(sum, 0)
+    return TimeFormatter(sum, 0), outSegmentTimes
 
 def GetSplitNames():
     v = BuildSegmentsById(tree)
     return list(v)
 
-if len(sys.argv) == 1:
-    print("Please specify a file path.")
-    exit()
-    
-GFileName = ' '.join(sys.argv[1:])
+GFileName = ""
+
+if len(argv) == 1:
+    GFileName = easygui.fileopenbox()
+else:
+    GFileName = ' '.join(argv[1:])
     
 tree = etree.parse(GFileName)
 
 names = GetSplitNames()
-layout = [[sg.Text('Sum of best: ', key='sob', size=(20, 1), auto_size_text=True)], [sg.Listbox(names, enable_events=True, size=(None, len(names)), key='list_changed', select_mode=sg.LISTBOX_SELECT_MODE_MULTIPLE)]]
-sg.theme('DarkBlue')
+
+left_frame = [
+    [
+        sg.Text('Sum of best: ', key='sob', size=(20, 1), auto_size_text=True)
+    ],
+    [
+        sg.Listbox(names, enable_events=True, size=(None, len(names)), key='list_changed', select_mode=sg.LISTBOX_SELECT_MODE_MULTIPLE)
+    ]
+]
+
+right_frame = [
+    [
+        sg.Multiline(key='SegmentData', size=(40,5), disabled=True)
+    ]
+]
+
+layout = [
+    [
+        sg.Frame('Segments', left_frame, key='Segments'), sg.Frame('SegmentTimes', right_frame, key='SegmentTimes'),
+    ]
+]
 window = sg.Window('Sum of best', layout, keep_on_top=True, resizable=False, finalize=True, icon='stashio.ico')
 window['sob'].expand(expand_x=True)
+window['Segments'].expand(expand_x=True, expand_y=True)
+window['SegmentTimes'].expand(expand_x=True, expand_y=True)
+window['SegmentData'].expand(expand_y=True)
 
 while True:
     event, values = window.Read()
     if not event:
         break
     if event == 'list_changed':
-        c = CalculateSumOfBest(values['list_changed'])
+        c, t = CalculateSumOfBest(values['list_changed'])
         window['sob'].update(f'Sum of best: {c}')
+        
+        window['SegmentData'].update(value='\n'.join([': '.join(list(z)) for z in zip(values['list_changed'], t)]))
