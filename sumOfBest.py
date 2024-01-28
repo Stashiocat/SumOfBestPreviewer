@@ -29,8 +29,10 @@ def AllSegments():
 
 def BuildSegmentsById(inTree):
     outTable = dict()
+    i = 0
     for Seg in AllSegments():
-        segName = GetSegmentName(Seg)
+        segName = str(i) + ". " + GetSegmentName(Seg)
+        i += 1
         segHist = Seg.find("SegmentHistory")
         
         if not segName in outTable:
@@ -94,13 +96,13 @@ else:
 tree = etree.parse(GFileName)
 
 names = GetSplitNames()
-
+print(len(names))
 left_frame = [
     [
         sg.Text('Sum of best: ', key='sob', size=(20, 1), auto_size_text=True)
     ],
     [
-        sg.Listbox(names, enable_events=True, size=(None, len(names)), key='list_changed', select_mode=sg.LISTBOX_SELECT_MODE_MULTIPLE)
+        sg.Listbox(names, enable_events=True, size=(None, 20), key='list_changed', select_mode=sg.LISTBOX_SELECT_MODE_MULTIPLE)
     ]
 ]
 
